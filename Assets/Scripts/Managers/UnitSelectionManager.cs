@@ -1,114 +1,137 @@
-using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
+using Managers;
 using UnityEngine;
 
 public class UnitSelectionManager : MonoBehaviour
 {
-    // Stores selected units. Keeping ArrayList as per existing codebase, though List<Unit> is preferred.
     [SerializeField] private List<Unit> selectedUnits;
-
-    private bool _isDragging = false;
-    private Vector2 _startDragPosition; // in screen space
-    private Camera _mainCamera;
-
-    // Pixels mouse must travel while held before we consider it a drag selection
     [SerializeField] private float dragThreshold = 4f;
+
+    private HUDManager hudManager;
+    private Camera _mainCamera;
+    private bool _isDragging;
+    private Vector2 _dragStartScreenPos;
 
     void Awake()
     {
         _mainCamera = Camera.main;
+
+        if (selectedUnits == null)
+        {
+            selectedUnits = new List<Unit>();
+        }
+
+        hudManager = FindObjectOfType<HUDManager>();
+        if (hudManager == null)
+        {
+            Debug.LogError("HUDManager not found");
+        }
     }
     
     void Update()
     {
-        // Mouse down: record start position
         if (Input.GetMouseButtonDown(0))
         {
-            _isDragging = false; // reset; we don't know it's a drag yet
-            _startDragPosition = Input.mousePosition;
-            StartSelection();
+            _isDragging = false;
+            _dragStartScreenPos = Input.mousePosition;
         }
 
-        // While holding: decide if it's a drag based on distance
         if (Input.GetMouseButton(0))
         {
-            if (!_isDragging)
+            if (!_isDragging && Vector2.Distance(Input.mousePosition, _dragStartScreenPos) > dragThreshold)
             {
-                if (Vector2.Distance(Input.mousePosition, _startDragPosition) > dragThreshold)
+                _isDragging = true;
+                if (hudManager != null)
                 {
-                    _isDragging = true;
+                    hudManager.BeginDragSelection(_dragStartScreenPos);
                 }
             }
 
-            // TODO: If you add a selection rectangle visual, update it here using _startDragPosition and Input.mousePosition.
+            if (_isDragging && hudManager != null)
+            {
+                hudManager.UpdateDragSelection(Input.mousePosition);
+            }
         }
-        
-        // Mouse up: finish either drag selection or single click
+
         if (Input.GetMouseButtonUp(0))
         {
             if (_isDragging)
             {
-                // Finish drag selection
-                SelectUnitsInDragArea(_startDragPosition, Input.mousePosition);
-                _isDragging = false;
+                if (hudManager != null)
+                {
+                    hudManager.UpdateDragSelection(Input.mousePosition);
+                    SelectUnitsInDragArea(hudManager.GetScreenDragRect());
+                    hudManager.EndDragSelection();
+                }
+                else
+                {
+                    SelectUnitsInDragArea(GetScreenRect(_dragStartScreenPos, Input.mousePosition));
+                }
             }
             else
             {
-                // Single click selection
                 SelectUnitAtMouse();
             }
+
+            _isDragging = false;
         }
     }
 
-    void StartSelection()
-    {
-        // Reserved for starting selection visuals if needed later
-        // e.g., enabling a UI selection rectangle
-    }
-    
-    void SelectUnitAtMouse()
+    private void SelectUnitAtMouse()
     {
         selectedUnits.Clear();
+
+        if (_mainCamera == null)
+        {
+            _mainCamera = Camera.main;
+            if (_mainCamera == null) return;
+        }
 
         Vector3 worldPoint = _mainCamera.ScreenToWorldPoint(Input.mousePosition);
         Vector2 point2D = new Vector2(worldPoint.x, worldPoint.y);
 
         RaycastHit2D hit = Physics2D.Raycast(point2D, Vector2.zero);
-        
-        if (hit.collider.IsUnityNull()) return;
-        
-        if (hit.collider.TryGetComponent<Unit>(out var unit) && !unit.IsUnityNull())
+        if (hit.collider == null) return;
+
+        if (hit.collider.TryGetComponent<Unit>(out var unit) && unit != null)
         {
             selectedUnits.Add(unit);
         }
     }
 
-    void SelectUnitsInDragArea(Vector2 screenStart, Vector2 screenEnd)
+    private void SelectUnitsInDragArea(Rect screenRect)
     {
         selectedUnits.Clear();
 
-        // Convert screen corners to world space (2D)
-        Vector3 w0 = _mainCamera.ScreenToWorldPoint(screenStart);
-        Vector3 w1 = _mainCamera.ScreenToWorldPoint(screenEnd);
-
-        Vector2 bottomLeft = new Vector2(Mathf.Min(w0.x, w1.x), Mathf.Min(w0.y, w1.y));
-        Vector2 topRight   = new Vector2(Mathf.Max(w0.x, w1.x), Mathf.Max(w0.y, w1.y));
-
-        // Query all colliders in the area
-        Collider2D[] hits = Physics2D.OverlapAreaAll(bottomLeft, topRight);
-        if (hits == null || hits.Length == 0) return;
-
-        foreach (var col in hits)
+        if (_mainCamera == null)
         {
-            if (col == null || col.IsUnityNull()) continue;
-            if (col.TryGetComponent<Unit>(out var unit) && !unit.IsUnityNull())
+            _mainCamera = Camera.main;
+            if (_mainCamera == null) return;
+        }
+
+        Vector3 worldBottomLeft = _mainCamera.ScreenToWorldPoint(new Vector3(screenRect.xMin, screenRect.yMin, 0f));
+        Vector3 worldTopRight = _mainCamera.ScreenToWorldPoint(new Vector3(screenRect.xMax, screenRect.yMax, 0f));
+
+        Vector2 bottomLeft = new Vector2(Mathf.Min(worldBottomLeft.x, worldTopRight.x), Mathf.Min(worldBottomLeft.y, worldTopRight.y));
+        Vector2 topRight = new Vector2(Mathf.Max(worldBottomLeft.x, worldTopRight.x), Mathf.Max(worldBottomLeft.y, worldTopRight.y));
+
+        Collider2D[] hits = Physics2D.OverlapAreaAll(bottomLeft, topRight);
+        for (int i = 0; i < hits.Length; i++)
+        {
+            Collider2D col = hits[i];
+            if (col == null) continue;
+
+            if (col.TryGetComponent<Unit>(out var unit) && unit != null && !selectedUnits.Contains(unit))
             {
-                if (!selectedUnits.Contains(unit))
-                {
-                    selectedUnits.Add(unit);
-                }
+                selectedUnits.Add(unit);
             }
         }
+    }
+
+    private static Rect GetScreenRect(Vector2 start, Vector2 end)
+    {
+        Vector2 min = Vector2.Min(start, end);
+        Vector2 max = Vector2.Max(start, end);
+        return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
     }
 }
