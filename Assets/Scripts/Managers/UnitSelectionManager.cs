@@ -99,7 +99,7 @@ public class UnitSelectionManager : MonoBehaviour
 
     private void SelectUnitAtMouse()
     {
-        selectedUnits.Clear();
+        ClearCurrentSelection();
 
         if (_mainCamera == null)
         {
@@ -121,7 +121,7 @@ public class UnitSelectionManager : MonoBehaviour
 
     private void SelectUnitsInDragArea(Rect screenRect)
     {
-        selectedUnits.Clear();
+        ClearCurrentSelection();
 
         if (_mainCamera == null)
         {
@@ -155,6 +155,30 @@ public class UnitSelectionManager : MonoBehaviour
         if (selectedUnits.Contains(unit)) return;
 
         selectedUnits.Add(unit);
+        unit.SetSelectionVisual(true);
+    }
+
+    private void ClearCurrentSelection()
+    {
+        if (selectedUnits == null)
+        {
+            selectedUnits = new List<Unit>();
+            return;
+        }
+
+        for (int i = 0; i < selectedUnits.Count; i++)
+        {
+            Unit unit = selectedUnits[i];
+            if (unit == null) continue;
+            unit.SetSelectionVisual(false);
+        }
+
+        selectedUnits.Clear();
+    }
+
+    private void OnDisable()
+    {
+        ClearCurrentSelection();
     }
 
     private static Rect GetScreenRect(Vector2 start, Vector2 end)
