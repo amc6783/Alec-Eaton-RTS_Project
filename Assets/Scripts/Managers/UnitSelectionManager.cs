@@ -6,6 +6,7 @@ public class UnitSelectionManager : MonoBehaviour
 {
     [SerializeField] private List<Unit> selectedUnits;
     [SerializeField] private float dragThreshold = 4f;
+    [SerializeField] private float commandFormationSpacing = 0.6f;
 
     private HUDManager hudManager;
     private Camera _mainCamera;
@@ -30,10 +31,29 @@ public class UnitSelectionManager : MonoBehaviour
     
     void Update()
     {
+        if (UnitSpawnDebugUI.IsBlockingWorldInput())
+        {
+            if (_isDragging)
+            {
+                _isDragging = false;
+                if (hudManager != null)
+                {
+                    hudManager.EndDragSelection();
+                }
+            }
+
+            return;
+        }
+
         if (Input.GetMouseButtonDown(0))
         {
             _isDragging = false;
             _dragStartScreenPos = Input.mousePosition;
+        }
+
+        if (Input.GetMouseButtonDown(1))
+        {
+            IssueMoveCommandAtMouse();
         }
 
         if (Input.GetMouseButton(0))
@@ -95,7 +115,7 @@ public class UnitSelectionManager : MonoBehaviour
 
         if (hit.collider.TryGetComponent<Unit>(out var unit) && unit != null)
         {
-            selectedUnits.Add(unit);
+            TrySelectUnit(unit);
         }
     }
 
@@ -123,9 +143,18 @@ public class UnitSelectionManager : MonoBehaviour
 
             if (col.TryGetComponent<Unit>(out var unit) && unit != null && !selectedUnits.Contains(unit))
             {
-                selectedUnits.Add(unit);
+                TrySelectUnit(unit);
             }
         }
+    }
+
+    private void TrySelectUnit(Unit unit)
+    {
+        if (unit == null) return;
+        if (!unit.IsSelectableByLocalClient()) return;
+        if (selectedUnits.Contains(unit)) return;
+
+        selectedUnits.Add(unit);
     }
 
     private static Rect GetScreenRect(Vector2 start, Vector2 end)
@@ -133,5 +162,52 @@ public class UnitSelectionManager : MonoBehaviour
         Vector2 min = Vector2.Min(start, end);
         Vector2 max = Vector2.Max(start, end);
         return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
+    }
+
+    private void IssueMoveCommandAtMouse()
+    {
+        if (selectedUnits == null || selectedUnits.Count == 0)
+        {
+            return;
+        }
+
+        if (_mainCamera == null)
+        {
+            _mainCamera = Camera.main;
+            if (_mainCamera == null) return;
+        }
+
+        Vector3 worldPoint = _mainCamera.ScreenToWorldPoint(Input.mousePosition);
+        Vector2 destination = new Vector2(worldPoint.x, worldPoint.y);
+
+        List<UnitMovement> commandableUnits = new List<UnitMovement>(selectedUnits.Count);
+
+        for (int i = 0; i < selectedUnits.Count; i++)
+        {
+            Unit unit = selectedUnits[i];
+            if (unit == null) continue;
+            if (!unit.TryGetComponent<UnitMovement>(out var movement) || movement == null) continue;
+            if (!movement.CanReceiveLocalCommands()) continue;
+
+            commandableUnits.Add(movement);
+        }
+
+        if (commandableUnits.Count == 0)
+        {
+            return;
+        }
+
+        int columns = Mathf.CeilToInt(Mathf.Sqrt(commandableUnits.Count));
+        int rows = Mathf.CeilToInt(commandableUnits.Count / (float)columns);
+        Vector2 formationOrigin = destination - new Vector2((columns - 1) * commandFormationSpacing * 0.5f,
+            (rows - 1) * commandFormationSpacing * 0.5f);
+
+        for (int i = 0; i < commandableUnits.Count; i++)
+        {
+            int row = i / columns;
+            int col = i % columns;
+            Vector2 offset = new Vector2(col * commandFormationSpacing, row * commandFormationSpacing);
+            commandableUnits[i].RequestMove(formationOrigin + offset);
+        }
     }
 }
