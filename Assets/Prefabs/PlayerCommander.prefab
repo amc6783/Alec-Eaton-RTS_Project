@@ -48,6 +48,7 @@ MonoBehaviour:
   _componentIndexCache: 0
   _addedNetworkObject: {fileID: 9010000000000000004}
   _networkObjectCache: {fileID: 9010000000000000004}
+  defaultTeam: 0
 --- !u!114 &9010000000000000004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -78,12 +79,12 @@ MonoBehaviour:
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
-  _initializedTimestamp: -8584250388080654729
+  _initializedTimestamp: -8584249419103672290
   _localLevelOfDetailCalculationType: 0
   _useLevelOfDetail: 0
   _useRootLevelOfDetail: 1
   NetworkObserver: {fileID: 0}
-  _enablePrediction: 0
+  _enablePrediction: 1
   _predictionType: 0
   _localReconcileCorrectionType: 2
   _graphicalObject: {fileID: 0}
