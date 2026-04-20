@@ -21,6 +21,7 @@ public class UnitSpawnDebugUI : MonoBehaviour
     private UIDocument _uiDocument;
     private VisualElement _panel;
     private TextField _countField;
+    private TextField _teamField;
     private Label _statusLabel;
     private Button _spawnButton;
 
@@ -115,6 +116,7 @@ public class UnitSpawnDebugUI : MonoBehaviour
                 borderTopRightRadius = 6,
                 borderBottomLeftRadius = 6,
                 borderBottomRightRadius = 6,
+                color = Color.white,
             }
         };
 
@@ -132,7 +134,7 @@ public class UnitSpawnDebugUI : MonoBehaviour
         {
             style =
             {
-                color = new Color(0.8f, 0.8f, 0.8f),
+                color = Color.white,
                 fontSize = 11,
                 marginBottom = 6
             }
@@ -140,6 +142,9 @@ public class UnitSpawnDebugUI : MonoBehaviour
 
         _countField = new TextField("Count") { value = "1" };
         _countField.style.marginBottom = 4;
+
+        _teamField = new TextField("Team") { value = "0" };
+        _teamField.style.marginBottom = 8;
 
         _countField.style.marginBottom = 8;
 
@@ -153,7 +158,7 @@ public class UnitSpawnDebugUI : MonoBehaviour
         {
             style =
             {
-                color = new Color(0.75f, 0.95f, 0.75f),
+                color = Color.white,
                 fontSize = 11,
                 whiteSpace = WhiteSpace.Normal
             }
@@ -162,6 +167,7 @@ public class UnitSpawnDebugUI : MonoBehaviour
         _panel.Add(titleLabel);
         _panel.Add(hintLabel);
         _panel.Add(_countField);
+        _panel.Add(_teamField);
         _panel.Add(_spawnButton);
         _panel.Add(_statusLabel);
         _panel.RegisterCallback<PointerDownEvent>(OnPanelPointerDown);
@@ -189,6 +195,7 @@ public class UnitSpawnDebugUI : MonoBehaviour
     private void SpawnUnitsAt(Vector3 origin)
     {
         int count = Mathf.Max(1, ParseInt(_countField.value, 1));
+        int team = ParseInt(_teamField?.value, 0);
 
         int createdCount = 0;
         for (int i = 0; i < count; i++)
@@ -198,13 +205,13 @@ public class UnitSpawnDebugUI : MonoBehaviour
 
             Unit createdUnit = Instantiate(unitPrefab, spawnPosition, Quaternion.identity, spawnParent);
 
-            if (createdUnit != null && FinalizeSpawn(createdUnit))
+            if (createdUnit != null && FinalizeSpawn(createdUnit, team))
             {
                 createdCount++;
             }
         }
 
-        _statusLabel.text = "Created " + createdCount + " unit(s).";
+        _statusLabel.text = "Created " + createdCount + " unit(s) on team " + team + ".";
     }
 
     private Vector3 GetMouseWorldPosition2D()
@@ -227,7 +234,7 @@ public class UnitSpawnDebugUI : MonoBehaviour
         return world;
     }
 
-    private bool FinalizeSpawn(Unit unit)
+    private bool FinalizeSpawn(Unit unit, int team)
     {
         if (unit == null)
         {
@@ -243,6 +250,7 @@ public class UnitSpawnDebugUI : MonoBehaviour
 
         if (!InstanceFinder.IsClientStarted && !InstanceFinder.IsServerStarted)
         {
+            _statusLabel.text = "Team assignment requires server/host.";
             return true;
         }
         if (!InstanceFinder.IsServerStarted)
@@ -254,6 +262,7 @@ public class UnitSpawnDebugUI : MonoBehaviour
 
         NetworkConnection ownerConnection = InstanceFinder.IsClientStarted ? InstanceFinder.ClientManager.Connection : null;
         InstanceFinder.ServerManager.Spawn(networkObject, ownerConnection);
+        unit.SetTeamServer(team);
         return true;
     }
 
