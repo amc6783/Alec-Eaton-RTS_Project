@@ -189,7 +189,7 @@ PrefabInstance:
     - target: {fileID: 7443408887813606060, guid: 0b650fca685f2eb41a86538aa883e4c1, type: 3}
       propertyPath: _playerPrefab
       value: 
-      objectReference: {fileID: 9010000000000000004, guid: 7f0ef89afc234f3a9d4c587af99f56fb, type: 3}
+      objectReference: {fileID: 9010000000000000004, guid: a49295009f4f71040bcbca2c8ceff97f, type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 0b650fca685f2eb41a86538aa883e4c1, type: 3}
 --- !u!1 &43674521
@@ -486,14 +486,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f31d4cc550387b24abd80d492da9ac68, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hudCanvas: {fileID: 1798761164}
+  hudCanvas: {fileID: 1777006647}
   lowerLeftCorner: {x: 0, y: 0}
   upperRightCorner: {x: 0, y: 0}
   rectangleColor: {r: 1, g: 1, b: 1, a: 0.35}
   outlineColor: {r: 1, g: 1, b: 1, a: 0.9}
   outlineThickness: 2
   rectangleVisible: 0
-  unitSelectionRectangle: {fileID: 1433709657}
+  unitSelectionRectangle: {fileID: 666262948}
   unitSelectionIsDragging: 0
 --- !u!4 &467379329
 Transform:
@@ -726,8 +726,8 @@ RectTransform:
   m_Father: {fileID: 625084420}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.50595236, y: 0.3568521}
-  m_AnchorMax: {x: 0.8434524, y: 0.68385345}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -1352,18 +1352,37 @@ MonoBehaviour:
   m_GameObject: {fileID: 1635128211}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f31d4cc550387b24abd80d492da9ac68, type: 3}
+  m_Script: {fileID: 11500000, guid: 13c810bdbbe84654aa34550d344dfdca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hudCanvas: {fileID: 1798761164}
+  hudCanvas: {fileID: 1777006647}
   lowerLeftCorner: {x: 0, y: 0}
   upperRightCorner: {x: 0, y: 0}
-  rectangleColor: {r: 1, g: 1, b: 1, a: 0.35}
-  outlineColor: {r: 1, g: 1, b: 1, a: 0.9}
+  rectangleColor:
+    r: 1
+    g: 1
+    b: 1
+    a: 0.35
+  outlineColor:
+    r: 1
+    g: 1
+    b: 1
+    a: 0.9
   outlineThickness: 2
   rectangleVisible: 0
-  unitSelectionRectangle: {fileID: 1433709657}
+  unitSelectionRectangle: {fileID: 666262948}
   unitSelectionIsDragging: 0
+  _rectangleRectTransform: {fileID: 666262949}
+  _rectangleImage: {fileID: 666262950}
+  _topBorderRect: {fileID: 934770033}
+  _bottomBorderRect: {fileID: 994105546}
+  _leftBorderRect: {fileID: 505190723}
+  _rightBorderRect: {fileID: 1588188958}
+  _topBorderImage: {fileID: 934770034}
+  _bottomBorderImage: {fileID: 994105547}
+  _leftBorderImage: {fileID: 505190724}
+  _rightBorderImage: {fileID: 1588188959}
+  _validateApplyQueued: 0
 --- !u!1 &1677630933
 GameObject:
   m_ObjectHideFlags: 0
@@ -1440,6 +1459,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1677630933}
   m_CullTransparentMesh: 1
+--- !u!223 &1777006647 stripped
+Canvas:
+  m_CorrespondingSourceObject: {fileID: 4393252310584637085, guid: 0b650fca685f2eb41a86538aa883e4c1, type: 3}
+  m_PrefabInstance: {fileID: 26818125}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1798761161
 GameObject:
   m_ObjectHideFlags: 0

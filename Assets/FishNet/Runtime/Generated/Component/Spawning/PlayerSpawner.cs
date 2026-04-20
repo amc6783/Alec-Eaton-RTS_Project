@@ -65,7 +65,7 @@ namespace FishNet.Component.Spawning
 
         private void OnDestroy()
         {
-            if (_networkManager != null && _networkManager.SceneManager != null)
+            if (_networkManager != null)
                 _networkManager.SceneManager.OnClientLoadedStartScenes -= SceneManager_OnClientLoadedStartScenes;
         }
 
@@ -81,11 +81,6 @@ namespace FishNet.Component.Spawning
             if (_networkManager == null)
             {
                 _networkManager.LogWarning($"PlayerSpawner on {gameObject.name} cannot work as NetworkManager wasn't found on this object or within parent objects.");
-                return;
-            }
-            if (_networkManager.SceneManager == null)
-            {
-                _networkManager.LogWarning($"PlayerSpawner on {gameObject.name} cannot initialize because SceneManager is not available.");
                 return;
             }
 
