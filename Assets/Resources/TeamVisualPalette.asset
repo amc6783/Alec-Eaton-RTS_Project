@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de8407c9d4f842a48e20166bba04bd1e, type: 3}
+  m_Name: TeamVisualPalette
+  m_EditorClassIdentifier: 
+  explicitTeamColors:
+  - teamId: 0
+    color: {r: 0.18, g: 0.52, b: 0.97, a: 1}
+  - teamId: 1
+    color: {r: 0.95, g: 0.25, b: 0.23, a: 1}
+  fallbackCycle:
+  - {r: 0.18, g: 0.52, b: 0.97, a: 1}
+  - {r: 0.95, g: 0.25, b: 0.23, a: 1}
+  - {r: 0.16, g: 0.75, b: 0.29, a: 1}
+  - {r: 0.99, g: 0.74, b: 0.18, a: 1}
+  - {r: 0.65, g: 0.31, b: 0.95, a: 1}
+  - {r: 0.1, g: 0.83, b: 0.88, a: 1}
+  - {r: 1, g: 0.53, b: 0.16, a: 1}
+  - {r: 0.9, g: 0.18, b: 0.63, a: 1}
+  fallbackColor: {r: 1, g: 1, b: 1, a: 1}

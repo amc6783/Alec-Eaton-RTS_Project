@@ -68,10 +68,7 @@ MonoBehaviour:
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
-  _initializedTimestamp: -8584250388080654729
-  _localLevelOfDetailCalculationType: 0
-  _useLevelOfDetail: 0
-  _useRootLevelOfDetail: 1
+  _initializedTimestamp: -8584312066425166658
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
   _predictionType: 0
@@ -87,7 +84,7 @@ MonoBehaviour:
   _spectatorInterpolation: 1
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 4
+  <PrefabId>k__BackingField: 5
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 7357667251099481026
   SceneId: 0
@@ -111,6 +108,11 @@ MonoBehaviour:
   _componentIndexCache: 0
   _addedNetworkObject: {fileID: 8475222101369129519}
   _networkObjectCache: {fileID: 8475222101369129519}
+  _hitboxLayer:
+    serializedVersion: 2
+    m_Bits: 32
+  _audio: {fileID: 8300000, guid: 0330762d2b3c8d641bfe11ad89b7e196, type: 3}
+  _muzzleFlashPrefab: {fileID: 39148481766341303, guid: 4385a793e032d634bb912f84a23d6db1, type: 3}
 --- !u!114 &1348621277
 MonoBehaviour:
   m_ObjectHideFlags: 0

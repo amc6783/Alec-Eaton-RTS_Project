@@ -41,12 +41,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 4585969183911965082}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f31d4cc550387b24abd80d492da9ac68, type: 3}
+  m_Script: {fileID: 11500000, guid: 13c810bdbbe84654aa34550d344dfdca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   hudCanvas: {fileID: 0}
-  lowerLeftCorner: {x: 850, y: 263}
-  upperRightCorner: {x: 1417, y: 504}
+  lowerLeftCorner: {x: 0, y: 0}
+  upperRightCorner: {x: 0, y: 0}
   rectangleColor: {r: 1, g: 1, b: 1, a: 0.35}
   outlineColor: {r: 1, g: 1, b: 1, a: 0.9}
   outlineThickness: 2

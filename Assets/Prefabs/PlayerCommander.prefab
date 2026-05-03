@@ -45,9 +45,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9d1641f2c1c249b4a38c1f106f2c93a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 0
+  _componentIndexCache: 255
   _addedNetworkObject: {fileID: 9010000000000000004}
-  _networkObjectCache: {fileID: 9010000000000000004}
+  _networkObjectCache: {fileID: 0}
   defaultTeam: 0
 --- !u!114 &9010000000000000004
 MonoBehaviour:
@@ -68,7 +68,7 @@ MonoBehaviour:
   <PredictedSpawn>k__BackingField: {fileID: 0}
   <PredictedOwner>k__BackingField: {fileID: 0}
   NetworkBehaviours:
-  - {fileID: 9010000000000000003}
+  - {fileID: 0}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
   RuntimeParentNetworkBehaviour: {fileID: 0}
@@ -79,12 +79,12 @@ MonoBehaviour:
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
-  _initializedTimestamp: -8584249419103672290
+  _initializedTimestamp: -8584250388080654729
   _localLevelOfDetailCalculationType: 0
   _useLevelOfDetail: 0
   _useRootLevelOfDetail: 1
   NetworkObserver: {fileID: 0}
-  _enablePrediction: 1
+  _enablePrediction: 0
   _predictionType: 0
   _localReconcileCorrectionType: 2
   _graphicalObject: {fileID: 0}

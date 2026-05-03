@@ -1,0 +1,10 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement name="panel" class="spawn-debug-panel">
+        <ui:Label name="titleLabel" class="spawn-debug-title" text="Unit Spawn Debug" />
+        <ui:Label name="hintLabel" class="spawn-debug-hint" text="Open: F1" />
+        <ui:TextField name="countField" class="spawn-debug-field" label="Count" value="1" />
+        <ui:TextField name="teamField" class="spawn-debug-field" label="Team" value="0" />
+        <ui:Button name="spawnButton" class="spawn-debug-button" text="Spawn Units" />
+        <ui:Label name="statusLabel" class="spawn-debug-status" text="Ready" />
+    </ui:VisualElement>
+</ui:UXML>

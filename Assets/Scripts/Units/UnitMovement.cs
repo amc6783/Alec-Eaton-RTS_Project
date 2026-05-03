@@ -7,6 +7,7 @@ using UnityEngine;
 [RequireComponent(typeof(NetworkObject))]
 [RequireComponent(typeof(NetworkTransform))]
 [RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(Unit))]
 public class UnitMovement : NetworkBehaviour
 {
     [Header("Movement")]
@@ -20,12 +21,14 @@ public class UnitMovement : NetworkBehaviour
     private bool _hasDestination;
     private float _currentSpeed;
     private Rigidbody2D _rigidbody2D;
+    private Unit _unit;
 
     public bool IsMoving => _hasDestination;
 
     private void Awake()
     {
         _rigidbody2D = GetComponent<Rigidbody2D>();
+        _unit = GetComponent<Unit>();
     }
 
     protected override void OnValidate()
@@ -61,12 +64,12 @@ public class UnitMovement : NetworkBehaviour
             return true;
         }
 
-        if (IsServerInitialized)
+        if (IsServerInitialized && !IsClientStarted)
         {
             return true;
         }
 
-        return IsOwner;
+        return _unit != null && _unit.IsSelectableByLocalClient();
     }
 
     public void RequestMove(Vector2 worldDestination)
@@ -92,10 +95,33 @@ public class UnitMovement : NetworkBehaviour
         RequestMoveServerRpc(worldDestination);
     }
 
+    public void RequestStop()
+    {
+        if (NetworkObject == null)
+        {
+            StopServer();
+            return;
+        }
+
+        if (!IsClientStarted && !IsServerStarted)
+        {
+            StopServer();
+            return;
+        }
+
+        if (IsServerInitialized)
+        {
+            StopServer();
+            return;
+        }
+
+        RequestStopServerRpc();
+    }
+
     [ServerRpc(RequireOwnership = false)]
     private void RequestMoveServerRpc(Vector2 worldDestination, NetworkConnection sender = null)
     {
-        if (Owner.IsValid && sender != Owner)
+        if (!IsCommandAuthorized(sender))
         {
             return;
         }
@@ -103,10 +129,27 @@ public class UnitMovement : NetworkBehaviour
         SetDestinationServer(worldDestination);
     }
 
+    [ServerRpc(RequireOwnership = false)]
+    private void RequestStopServerRpc(NetworkConnection sender = null)
+    {
+        if (!IsCommandAuthorized(sender))
+        {
+            return;
+        }
+
+        StopServer();
+    }
+
     private void SetDestinationServer(Vector2 worldDestination)
     {
         _destination = worldDestination;
         _hasDestination = true;
+    }
+
+    private void StopServer()
+    {
+        _hasDestination = false;
+        _currentSpeed = 0f;
     }
 
     private bool ShouldSimulateMovement()
@@ -122,6 +165,21 @@ public class UnitMovement : NetworkBehaviour
         }
 
         return IsServerInitialized;
+    }
+
+    private bool IsCommandAuthorized(NetworkConnection sender)
+    {
+        if (_unit == null)
+        {
+            _unit = GetComponent<Unit>();
+        }
+
+        if (_unit == null || !PlayerCommander.TryGetTeamForConnection(sender, out int senderTeam))
+        {
+            return false;
+        }
+
+        return _unit.Team == senderTeam;
     }
 
     private void SimulateMovement(float deltaTime)

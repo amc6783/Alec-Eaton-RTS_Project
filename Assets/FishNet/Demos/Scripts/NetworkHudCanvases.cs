@@ -134,10 +134,8 @@ namespace FishNet.Example
             if (inputModule == null)
                 gameObject.AddComponent<StandaloneInputModule>();
 #else
-            if (_serverIndicator != null)
-                _serverIndicator.transform.gameObject.SetActive(false);
-            if (_clientIndicator != null)
-                _clientIndicator.transform.gameObject.SetActive(false);
+            _serverIndicator.transform.gameObject.SetActive(false);
+            _clientIndicator.transform.gameObject.SetActive(false);
 #endif
 
             _networkManager = FindObjectOfType<NetworkManager>();
@@ -176,9 +174,6 @@ namespace FishNet.Example
         /// <param name = "img"></param>
         private void UpdateColor(LocalConnectionState state, ref Image img)
         {
-            if (img == null)
-                return;
-
             Color c;
             if (state == LocalConnectionState.Started)
                 c = _startedColor;

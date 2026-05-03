@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 #if UNITY_EDITOR
@@ -9,6 +10,7 @@ namespace Managers
     public class HUDManager : MonoBehaviour
     {
         private const string RectangleName = "CenterHUDRectangle";
+        private const string HealthBarContainerName = "UnitHealthBars";
 
         [Header("HUD Canvas")]
         [SerializeField] private Canvas hudCanvas;
@@ -23,6 +25,16 @@ namespace Managers
         [SerializeField] private GameObject unitSelectionRectangle;
         [SerializeField] private bool unitSelectionIsDragging = false;
 
+        [Header("Unit Health Bars")]
+        [SerializeField] private bool showUnitHealthBars = true;
+        [SerializeField] private bool showFullHealthBars = true;
+        [SerializeField] private Vector2 healthBarSize = new Vector2(42f, 6f);
+        [SerializeField] private float healthBarWorldOffset = 0.35f;
+        [SerializeField] private float unitRefreshInterval = 0.25f;
+        [SerializeField] private Color healthBarBackColor = new Color(0f, 0f, 0f, 0.65f);
+        [SerializeField] private Color healthBarFillColor = new Color(0.15f, 0.9f, 0.25f, 0.95f);
+        [SerializeField] private Color healthBarLowFillColor = new Color(0.95f, 0.2f, 0.15f, 0.95f);
+
         private RectTransform _rectangleRectTransform;
         private Image _rectangleImage;
         private RectTransform _topBorderRect;
@@ -33,6 +45,11 @@ namespace Managers
         private Image _bottomBorderImage;
         private Image _leftBorderImage;
         private Image _rightBorderImage;
+        private RectTransform _canvasRectTransform;
+        private RectTransform _healthBarContainer;
+        private readonly List<Unit> _trackedUnits = new List<Unit>();
+        private readonly Dictionary<Unit, HealthBarView> _healthBars = new Dictionary<Unit, HealthBarView>();
+        private float _nextUnitRefreshTime;
 #if UNITY_EDITOR
         private bool _validateApplyQueued;
 #endif
@@ -40,7 +57,13 @@ namespace Managers
         void Awake()
         {
             EnsureRectangleExists();
+            EnsureHealthBarContainerExists();
             ApplyRectangleSettings();
+        }
+
+        private void Update()
+        {
+            UpdateUnitHealthBars();
         }
 
 #if UNITY_EDITOR
@@ -56,6 +79,9 @@ namespace Managers
         private void OnValidate()
         {
             outlineThickness = Mathf.Max(0f, outlineThickness);
+            healthBarSize.x = Mathf.Max(1f, healthBarSize.x);
+            healthBarSize.y = Mathf.Max(1f, healthBarSize.y);
+            unitRefreshInterval = Mathf.Max(0.05f, unitRefreshInterval);
 #if UNITY_EDITOR
             QueueValidateApply();
 #endif
@@ -107,6 +133,8 @@ namespace Managers
                 return;
             }
 
+            _canvasRectTransform = hudCanvas.transform as RectTransform;
+
             if (unitSelectionRectangle == null)
             {
                 Transform existing = hudCanvas.transform.Find(RectangleName);
@@ -122,6 +150,44 @@ namespace Managers
             }
 
             EnsureRectangleReferences();
+        }
+
+        private void EnsureHealthBarContainerExists()
+        {
+            if (hudCanvas == null)
+            {
+                hudCanvas = FindObjectOfType<Canvas>();
+            }
+
+            if (hudCanvas == null)
+            {
+                return;
+            }
+
+            _canvasRectTransform = hudCanvas.transform as RectTransform;
+            Transform existing = hudCanvas.transform.Find(HealthBarContainerName);
+            if (existing == null)
+            {
+                var containerObject = new GameObject(HealthBarContainerName, typeof(RectTransform));
+                containerObject.transform.SetParent(hudCanvas.transform, false);
+                _healthBarContainer = containerObject.GetComponent<RectTransform>();
+            }
+            else
+            {
+                _healthBarContainer = existing as RectTransform;
+            }
+
+            if (_healthBarContainer == null)
+            {
+                return;
+            }
+
+            _healthBarContainer.anchorMin = Vector2.zero;
+            _healthBarContainer.anchorMax = Vector2.one;
+            _healthBarContainer.pivot = new Vector2(0.5f, 0.5f);
+            _healthBarContainer.offsetMin = Vector2.zero;
+            _healthBarContainer.offsetMax = Vector2.zero;
+            _healthBarContainer.SetAsLastSibling();
         }
 
         private void EnsureRectangleReferences()
@@ -217,6 +283,202 @@ namespace Managers
             }
         }
 
+        private void UpdateUnitHealthBars()
+        {
+            if (!showUnitHealthBars)
+            {
+                HideAllHealthBars();
+                return;
+            }
+
+            EnsureHealthBarContainerExists();
+            if (_healthBarContainer == null || _canvasRectTransform == null)
+            {
+                return;
+            }
+
+            if (Time.unscaledTime >= _nextUnitRefreshTime)
+            {
+                RefreshTrackedUnits();
+                _nextUnitRefreshTime = Time.unscaledTime + unitRefreshInterval;
+            }
+
+            Camera worldCamera = Camera.main;
+            Camera canvasCamera = hudCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : hudCanvas.worldCamera;
+
+            for (int i = 0; i < _trackedUnits.Count; i++)
+            {
+                Unit unit = _trackedUnits[i];
+                if (unit == null)
+                {
+                    RemoveUnusedHealthBars();
+                    continue;
+                }
+
+                HealthBarView healthBar = GetOrCreateHealthBar(unit);
+                if (healthBar == null)
+                {
+                    continue;
+                }
+
+                float maxHealth = Mathf.Max(1f, unit.MaxHealth);
+                float healthPercent = Mathf.Clamp01(unit.CurrentHealth / maxHealth);
+                bool shouldShow = unit.IsAlive && (showFullHealthBars || healthPercent < 1f);
+
+                if (!shouldShow || worldCamera == null)
+                {
+                    healthBar.Root.SetActive(false);
+                    continue;
+                }
+
+                Vector3 worldPosition = GetHealthBarWorldPosition(unit);
+                Vector3 screenPosition = worldCamera.WorldToScreenPoint(worldPosition);
+                if (screenPosition.z < 0f || !ScreenPointToCanvasPosition(screenPosition, canvasCamera, out Vector2 canvasPosition))
+                {
+                    healthBar.Root.SetActive(false);
+                    continue;
+                }
+
+                healthBar.Root.SetActive(true);
+                healthBar.Rect.anchoredPosition = canvasPosition;
+                healthBar.FillRect.anchorMax = new Vector2(healthPercent, 1f);
+                healthBar.FillImage.color = Color.Lerp(healthBarLowFillColor, healthBarFillColor, healthPercent);
+            }
+        }
+
+        private void RefreshTrackedUnits()
+        {
+            _trackedUnits.Clear();
+            Unit[] units = FindObjectsOfType<Unit>();
+
+            for (int i = 0; i < units.Length; i++)
+            {
+                Unit unit = units[i];
+                if (unit != null)
+                {
+                    _trackedUnits.Add(unit);
+                }
+            }
+
+            RemoveUnusedHealthBars();
+        }
+
+        private HealthBarView GetOrCreateHealthBar(Unit unit)
+        {
+            if (unit == null)
+            {
+                return null;
+            }
+
+            if (_healthBars.TryGetValue(unit, out HealthBarView existing) && existing != null)
+            {
+                return existing;
+            }
+
+            var root = new GameObject(unit.name + "_HealthBar", typeof(RectTransform), typeof(Image));
+            root.transform.SetParent(_healthBarContainer, false);
+
+            RectTransform rootRect = root.GetComponent<RectTransform>();
+            rootRect.sizeDelta = healthBarSize;
+            rootRect.anchorMin = new Vector2(0.5f, 0.5f);
+            rootRect.anchorMax = new Vector2(0.5f, 0.5f);
+            rootRect.pivot = new Vector2(0.5f, 0.5f);
+
+            Image backImage = root.GetComponent<Image>();
+            backImage.color = healthBarBackColor;
+            backImage.raycastTarget = false;
+
+            var fill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+            fill.transform.SetParent(root.transform, false);
+
+            RectTransform fillRect = fill.GetComponent<RectTransform>();
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = Vector2.one;
+            fillRect.offsetMin = new Vector2(1f, 1f);
+            fillRect.offsetMax = new Vector2(-1f, -1f);
+
+            Image fillImage = fill.GetComponent<Image>();
+            fillImage.color = healthBarFillColor;
+            fillImage.raycastTarget = false;
+
+            var healthBar = new HealthBarView(root, rootRect, fillRect, fillImage);
+            _healthBars[unit] = healthBar;
+            return healthBar;
+        }
+
+        private Vector3 GetHealthBarWorldPosition(Unit unit)
+        {
+            Renderer renderer = unit.GetComponentInChildren<Renderer>();
+            if (renderer != null)
+            {
+                Bounds bounds = renderer.bounds;
+                return new Vector3(bounds.center.x, bounds.max.y + healthBarWorldOffset, bounds.center.z);
+            }
+
+            return unit.transform.position + Vector3.up * healthBarWorldOffset;
+        }
+
+        private bool ScreenPointToCanvasPosition(Vector3 screenPosition, Camera canvasCamera, out Vector2 canvasPosition)
+        {
+            if (_canvasRectTransform == null)
+            {
+                canvasPosition = Vector2.zero;
+                return false;
+            }
+
+            return RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                _canvasRectTransform,
+                screenPosition,
+                canvasCamera,
+                out canvasPosition
+            );
+        }
+
+        private void RemoveUnusedHealthBars()
+        {
+            List<Unit> removedUnits = null;
+            foreach (KeyValuePair<Unit, HealthBarView> pair in _healthBars)
+            {
+                if (pair.Key != null && _trackedUnits.Contains(pair.Key))
+                {
+                    continue;
+                }
+
+                if (removedUnits == null)
+                {
+                    removedUnits = new List<Unit>();
+                }
+
+                removedUnits.Add(pair.Key);
+
+                if (pair.Value != null && pair.Value.Root != null)
+                {
+                    Destroy(pair.Value.Root);
+                }
+            }
+
+            if (removedUnits == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < removedUnits.Count; i++)
+            {
+                _healthBars.Remove(removedUnits[i]);
+            }
+        }
+
+        private void HideAllHealthBars()
+        {
+            foreach (KeyValuePair<Unit, HealthBarView> pair in _healthBars)
+            {
+                if (pair.Value != null && pair.Value.Root != null)
+                {
+                    pair.Value.Root.SetActive(false);
+                }
+            }
+        }
+
         private void ApplyBorderSettings()
         {
             if (_topBorderRect == null || _bottomBorderRect == null || _leftBorderRect == null || _rightBorderRect == null) return;
@@ -252,6 +514,22 @@ namespace Managers
             _bottomBorderImage.color = outlineColor;
             _leftBorderImage.color = outlineColor;
             _rightBorderImage.color = outlineColor;
+        }
+
+        private sealed class HealthBarView
+        {
+            public HealthBarView(GameObject root, RectTransform rect, RectTransform fillRect, Image fillImage)
+            {
+                Root = root;
+                Rect = rect;
+                FillRect = fillRect;
+                FillImage = fillImage;
+            }
+
+            public GameObject Root { get; }
+            public RectTransform Rect { get; }
+            public RectTransform FillRect { get; }
+            public Image FillImage { get; }
         }
 
 #if UNITY_EDITOR

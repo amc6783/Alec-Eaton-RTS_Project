@@ -1,3 +1,4 @@
+using FishNet.Connection;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using UnityEngine;
@@ -23,6 +24,70 @@ public class PlayerCommander : NetworkBehaviour
     {
         base.OnStartServer();
         ResetTeamServer();
+    }
+
+    public bool IsLocalPlayerCommander()
+    {
+        if (NetworkObject == null)
+        {
+            return true;
+        }
+
+        if (!IsClientStarted && !IsServerStarted)
+        {
+            return true;
+        }
+
+        if (!IsClientStarted)
+        {
+            return false;
+        }
+
+        return IsOwner || Owner.IsLocalClient;
+    }
+
+    public static bool TryGetLocalPlayerTeam(out int team)
+    {
+        PlayerCommander[] commanders = FindObjectsOfType<PlayerCommander>();
+        for (int i = 0; i < commanders.Length; i++)
+        {
+            PlayerCommander commander = commanders[i];
+            if (commander == null || !commander.IsLocalPlayerCommander())
+            {
+                continue;
+            }
+
+            team = commander.Team;
+            return true;
+        }
+
+        team = default;
+        return false;
+    }
+
+    public static bool TryGetTeamForConnection(NetworkConnection connection, out int team)
+    {
+        if (connection == null || !connection.IsValid)
+        {
+            team = default;
+            return false;
+        }
+
+        PlayerCommander[] commanders = FindObjectsOfType<PlayerCommander>();
+        for (int i = 0; i < commanders.Length; i++)
+        {
+            PlayerCommander commander = commanders[i];
+            if (commander == null || commander.NetworkObject == null || commander.Owner != connection)
+            {
+                continue;
+            }
+
+            team = commander.Team;
+            return true;
+        }
+
+        team = default;
+        return false;
     }
 
     [Server]

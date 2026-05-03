@@ -31,6 +31,9 @@ public class UnitSelectionManager : MonoBehaviour
     
     void Update()
     {
+        InputBinding selectionBinding = LocalSettingsStore.Current.keybinds.selection;
+        InputBinding contextCommandBinding = LocalSettingsStore.Current.keybinds.contextCommand;
+
         if (UnitSpawnDebugUI.IsBlockingWorldInput())
         {
             if (_isDragging)
@@ -45,18 +48,18 @@ public class UnitSelectionManager : MonoBehaviour
             return;
         }
 
-        if (Input.GetMouseButtonDown(0))
+        if (selectionBinding.GetButtonDown())
         {
             _isDragging = false;
             _dragStartScreenPos = Input.mousePosition;
         }
 
-        if (Input.GetMouseButtonDown(1))
+        if (contextCommandBinding.GetButtonDown())
         {
-            IssueMoveCommandAtMouse();
+            IssueContextCommandAtMouse();
         }
 
-        if (Input.GetMouseButton(0))
+        if (selectionBinding.GetButton())
         {
             if (!_isDragging && Vector2.Distance(Input.mousePosition, _dragStartScreenPos) > dragThreshold)
             {
@@ -73,7 +76,7 @@ public class UnitSelectionManager : MonoBehaviour
             }
         }
 
-        if (Input.GetMouseButtonUp(0))
+        if (selectionBinding.GetButtonUp())
         {
             if (_isDragging)
             {
@@ -188,7 +191,7 @@ public class UnitSelectionManager : MonoBehaviour
         return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
     }
 
-    private void IssueMoveCommandAtMouse()
+    private void IssueContextCommandAtMouse()
     {
         if (selectedUnits == null || selectedUnits.Count == 0)
         {
@@ -204,20 +207,32 @@ public class UnitSelectionManager : MonoBehaviour
         Vector3 worldPoint = _mainCamera.ScreenToWorldPoint(Input.mousePosition);
         Vector2 destination = new Vector2(worldPoint.x, worldPoint.y);
 
-        List<UnitMovement> commandableUnits = new List<UnitMovement>(selectedUnits.Count);
+        Unit hoveredUnit = GetUnitAtMousePosition(destination);
+        bool issueAttackCommand = hoveredUnit != null && IsEnemyOfSelectedUnits(hoveredUnit);
+        List<UnitController> commandableUnits = new List<UnitController>(selectedUnits.Count);
 
         for (int i = 0; i < selectedUnits.Count; i++)
         {
             Unit unit = selectedUnits[i];
             if (unit == null) continue;
-            if (!unit.TryGetComponent<UnitMovement>(out var movement) || movement == null) continue;
-            if (!movement.CanReceiveLocalCommands()) continue;
+            if (!unit.TryGetComponent<UnitController>(out var controller) || controller == null) continue;
+            if (!controller.CanReceiveLocalCommands()) continue;
 
-            commandableUnits.Add(movement);
+            commandableUnits.Add(controller);
         }
 
         if (commandableUnits.Count == 0)
         {
+            return;
+        }
+
+        if (issueAttackCommand)
+        {
+            for (int i = 0; i < commandableUnits.Count; i++)
+            {
+                commandableUnits[i].RequestAttackCommand(hoveredUnit);
+            }
+
             return;
         }
 
@@ -231,7 +246,47 @@ public class UnitSelectionManager : MonoBehaviour
             int row = i / columns;
             int col = i % columns;
             Vector2 offset = new Vector2(col * commandFormationSpacing, row * commandFormationSpacing);
-            commandableUnits[i].RequestMove(formationOrigin + offset);
+            commandableUnits[i].RequestMoveCommand(formationOrigin + offset);
         }
+    }
+
+    private Unit GetUnitAtMousePosition(Vector2 worldPoint)
+    {
+        RaycastHit2D hit = Physics2D.Raycast(worldPoint, Vector2.zero);
+        if (hit.collider == null)
+        {
+            return null;
+        }
+
+        if (!hit.collider.TryGetComponent<Unit>(out var unit))
+        {
+            return null;
+        }
+
+        return unit;
+    }
+
+    private bool IsEnemyOfSelectedUnits(Unit unit)
+    {
+        if (unit == null || selectedUnits == null || selectedUnits.Count == 0)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < selectedUnits.Count; i++)
+        {
+            Unit selected = selectedUnits[i];
+            if (selected == null)
+            {
+                continue;
+            }
+
+            if (selected.Team != unit.Team)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

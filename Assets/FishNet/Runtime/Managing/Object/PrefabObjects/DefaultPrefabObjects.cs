@@ -44,11 +44,6 @@ namespace FishNet.Managing.Object
                 NetworkObject n = Prefabs[i];
                 if (i < index)
                     continue;
-                if (n == null)
-                {
-                    Debug.LogError($"DefaultPrefabObjects contains a null entry at index {i}. Remove missing entries and refresh default prefabs.");
-                    continue;
-                }
 
                 string pathAndName = $"{AssetDatabase.GetAssetPath(n.gameObject)}{n.gameObject.name}".Trim().ToLowerInvariant();
 
@@ -74,8 +69,6 @@ namespace FishNet.Managing.Object
             for (int i = 0; i < count; i++)
             {
                 NetworkObject n = Prefabs[i];
-                if (n == null)
-                    continue;
 
                 string pathAndName = $"{AssetDatabase.GetAssetPath(n.gameObject)}{n.gameObject.name}";
                 
@@ -110,13 +103,6 @@ namespace FishNet.Managing.Object
             bool error = false;
             foreach (NetworkObject n in Prefabs)
             {
-                if (n == null)
-                {
-                    error = true;
-                    Debug.LogError("DefaultPrefabObjects contains a missing/null NetworkObject reference. Remove invalid entries and refresh default prefabs.");
-                    continue;
-                }
-
                 hashcodes.Add(n.AssetPathHash);
                 // If hashcode is 0 something is wrong
                 if (n.AssetPathHash == 0)
@@ -130,7 +116,7 @@ namespace FishNet.Managing.Object
             if (error)
             {
                 Debug.LogError($"One or more NetworkObject prefabs did not have their AssetPathHash set. This usually occurs when a prefab cannot be saved. Check the specified prefabs for missing scripts or serialization errors and correct them, then use Fish-Networking -> Refresh Default Prefabs.");
-                // Continue sorting valid entries so startup does not hard-fail.
+                return;
             }
 
             // Once all hashes have been made re-add them to prefabs sorted.
