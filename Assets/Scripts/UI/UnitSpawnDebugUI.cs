@@ -7,6 +7,15 @@ using UnityEngine.UIElements;
 [DisallowMultipleComponent]
 public class UnitSpawnDebugUI : MonoBehaviour
 {
+    private const string LayoutResourcePath = "UI/UnitSpawnDebugUI";
+    private const string StyleResourcePath = "UI/UnitSpawnDebugUI";
+    private const string PanelElementName = "panel";
+    private const string CountFieldElementName = "countField";
+    private const string TeamFieldElementName = "teamField";
+    private const string StatusLabelElementName = "statusLabel";
+    private const string SpawnButtonElementName = "spawnButton";
+    private const string HintLabelElementName = "hintLabel";
+
     [Header("Spawn Setup")]
     [SerializeField] private Unit unitPrefab;
     [SerializeField] private Transform spawnParent;
@@ -15,6 +24,8 @@ public class UnitSpawnDebugUI : MonoBehaviour
 
     [Header("UI")]
     [SerializeField] private PanelSettings panelSettings;
+    [SerializeField] private VisualTreeAsset layoutAsset;
+    [SerializeField] private StyleSheet styleSheetAsset;
     [SerializeField] private KeyCode toggleKey = KeyCode.F1;
     [SerializeField] private bool startVisible = false;
 
@@ -68,6 +79,11 @@ public class UnitSpawnDebugUI : MonoBehaviour
     {
         if (_panel == null) return;
 
+        if (_spawnButton != null)
+        {
+            _spawnButton.clicked -= ToggleClickSpawnMode;
+        }
+
         _panel.UnregisterCallback<PointerDownEvent>(OnPanelPointerDown);
         _panel.UnregisterCallback<PointerMoveEvent>(OnPanelPointerMove);
         _panel.UnregisterCallback<PointerUpEvent>(OnPanelPointerUp);
@@ -99,85 +115,171 @@ public class UnitSpawnDebugUI : MonoBehaviour
         VisualElement root = _uiDocument.rootVisualElement;
         root.Clear();
 
-        _panel = new VisualElement
+        ResolveUiAssetsIfMissing();
+        if (styleSheetAsset != null && !root.styleSheets.Contains(styleSheetAsset))
         {
-            style =
-            {
-                position = Position.Absolute,
-                left = 12,
-                top = 12,
-                width = 280,
-                paddingLeft = 10,
-                paddingRight = 10,
-                paddingTop = 10,
-                paddingBottom = 10,
-                backgroundColor = new Color(0f, 0f, 0f, 0.75f),
-                borderTopLeftRadius = 6,
-                borderTopRightRadius = 6,
-                borderBottomLeftRadius = 6,
-                borderBottomRightRadius = 6,
-                color = Color.white,
-            }
-        };
+            root.styleSheets.Add(styleSheetAsset);
+        }
 
-        Label titleLabel = new Label("Unit Spawn Debug")
+        if (layoutAsset != null)
         {
-            style =
-            {
-                color = Color.white,
-                unityFontStyleAndWeight = FontStyle.Bold,
-                marginBottom = 6
-            }
-        };
-
-        Label hintLabel = new Label("Open: " + toggleKey)
+            layoutAsset.CloneTree(root);
+        }
+        else
         {
-            style =
-            {
-                color = Color.white,
-                fontSize = 11,
-                marginBottom = 6
-            }
-        };
+            BuildFallbackUi(root);
+        }
 
-        _countField = new TextField("Count") { value = "1" };
-        _countField.style.marginBottom = 4;
+        _panel = root.Q<VisualElement>(PanelElementName);
+        _countField = root.Q<TextField>(CountFieldElementName);
+        _teamField = root.Q<TextField>(TeamFieldElementName);
+        _statusLabel = root.Q<Label>(StatusLabelElementName);
+        _spawnButton = root.Q<Button>(SpawnButtonElementName);
+        Label hintLabel = root.Q<Label>(HintLabelElementName);
 
-        _teamField = new TextField("Team") { value = "0" };
-        _teamField.style.marginBottom = 8;
-
-        _countField.style.marginBottom = 8;
-
-        _spawnButton = new Button(ToggleClickSpawnMode)
+        if (_panel == null || _countField == null || _teamField == null || _statusLabel == null || _spawnButton == null)
         {
-            text = "Spawn Units"
-        };
-        _spawnButton.style.marginBottom = 6;
+            root.Clear();
+            BuildFallbackUi(root);
+            _panel = root.Q<VisualElement>(PanelElementName);
+            _countField = root.Q<TextField>(CountFieldElementName);
+            _teamField = root.Q<TextField>(TeamFieldElementName);
+            _statusLabel = root.Q<Label>(StatusLabelElementName);
+            _spawnButton = root.Q<Button>(SpawnButtonElementName);
+            hintLabel = root.Q<Label>(HintLabelElementName);
+        }
 
-        _statusLabel = new Label("Ready")
+        if (hintLabel != null)
         {
-            style =
-            {
-                color = Color.white,
-                fontSize = 11,
-                whiteSpace = WhiteSpace.Normal
-            }
-        };
+            hintLabel.text = "Open: " + toggleKey;
+        }
 
-        _panel.Add(titleLabel);
-        _panel.Add(hintLabel);
-        _panel.Add(_countField);
-        _panel.Add(_teamField);
-        _panel.Add(_spawnButton);
-        _panel.Add(_statusLabel);
+        ApplyPanelFrame(_panel);
+        ApplyPanelVisualDefaults(_panel);
+        ApplyInputFieldVisualDefaults(_countField);
+        ApplyInputFieldVisualDefaults(_teamField);
+        _spawnButton.clicked += ToggleClickSpawnMode;
+
         _panel.RegisterCallback<PointerDownEvent>(OnPanelPointerDown);
         _panel.RegisterCallback<PointerMoveEvent>(OnPanelPointerMove);
         _panel.RegisterCallback<PointerUpEvent>(OnPanelPointerUp);
         _panel.RegisterCallback<PointerCaptureOutEvent>(OnPanelPointerCaptureOut);
         _panel.RegisterCallback<PointerEnterEvent>(OnPanelPointerEnter);
         _panel.RegisterCallback<PointerLeaveEvent>(OnPanelPointerLeave);
+    }
 
-        root.Add(_panel);
+    private void ResolveUiAssetsIfMissing()
+    {
+        if (layoutAsset == null)
+        {
+            layoutAsset = Resources.Load<VisualTreeAsset>(LayoutResourcePath);
+        }
+
+        if (styleSheetAsset == null)
+        {
+            styleSheetAsset = Resources.Load<StyleSheet>(StyleResourcePath);
+        }
+    }
+
+    private static void BuildFallbackUi(VisualElement root)
+    {
+        VisualElement panel = new VisualElement { name = PanelElementName };
+        panel.AddToClassList("spawn-debug-panel");
+        panel.style.position = Position.Absolute;
+        panel.style.left = 12;
+        panel.style.top = 12;
+        panel.style.width = 280;
+        panel.style.paddingLeft = 10;
+        panel.style.paddingRight = 10;
+        panel.style.paddingTop = 10;
+        panel.style.paddingBottom = 10;
+        panel.style.backgroundColor = new Color(0f, 0f, 0f, 0.75f);
+        panel.style.borderTopLeftRadius = 6;
+        panel.style.borderTopRightRadius = 6;
+        panel.style.borderBottomLeftRadius = 6;
+        panel.style.borderBottomRightRadius = 6;
+        panel.style.color = Color.white;
+
+        Label titleLabel = new Label("Unit Spawn Debug") { name = "titleLabel" };
+        titleLabel.AddToClassList("spawn-debug-title");
+        Label hintLabel = new Label("Open: F1") { name = HintLabelElementName };
+        hintLabel.AddToClassList("spawn-debug-hint");
+        TextField countField = new TextField("Count") { name = CountFieldElementName, value = "1" };
+        countField.AddToClassList("spawn-debug-field");
+        TextField teamField = new TextField("Team") { name = TeamFieldElementName, value = "0" };
+        teamField.AddToClassList("spawn-debug-field");
+        Button spawnButton = new Button { name = SpawnButtonElementName, text = "Spawn Units" };
+        spawnButton.AddToClassList("spawn-debug-button");
+        Label statusLabel = new Label("Ready") { name = StatusLabelElementName };
+        statusLabel.AddToClassList("spawn-debug-status");
+
+        panel.Add(titleLabel);
+        panel.Add(hintLabel);
+        panel.Add(countField);
+        panel.Add(teamField);
+        panel.Add(spawnButton);
+        panel.Add(statusLabel);
+        root.Add(panel);
+    }
+
+    private static void ApplyPanelFrame(VisualElement panel)
+    {
+        if (panel == null)
+        {
+            return;
+        }
+
+        // Keep the debug panel as a floating box even if USS is missing or not loaded.
+        panel.style.position = Position.Absolute;
+        panel.style.left = 12;
+        panel.style.top = 12;
+        panel.style.width = 280;
+        panel.style.flexGrow = 0f;
+        panel.style.flexShrink = 0f;
+        panel.style.alignSelf = Align.FlexStart;
+    }
+
+    private static void ApplyPanelVisualDefaults(VisualElement panel)
+    {
+        if (panel == null)
+        {
+            return;
+        }
+
+        // Provide baseline readability when USS is not present or fails to load.
+        panel.style.backgroundColor = new Color(0f, 0f, 0f, 0.75f);
+        panel.style.paddingLeft = 10;
+        panel.style.paddingRight = 10;
+        panel.style.paddingTop = 10;
+        panel.style.paddingBottom = 10;
+        panel.style.borderTopLeftRadius = 6;
+        panel.style.borderTopRightRadius = 6;
+        panel.style.borderBottomLeftRadius = 6;
+        panel.style.borderBottomRightRadius = 6;
+        panel.style.color = Color.white;
+    }
+
+    private static void ApplyInputFieldVisualDefaults(TextField field)
+    {
+        if (field == null)
+        {
+            return;
+        }
+
+        field.labelElement.style.color = Color.white;
+
+        VisualElement input = field.Q(TextInputBaseField<string>.textInputUssName);
+        if (input == null)
+        {
+            return;
+        }
+
+        input.style.color = Color.white;
+        input.style.backgroundColor = new Color(0.12f, 0.12f, 0.12f, 1f);
+        input.style.borderTopColor = new Color(0.3f, 0.3f, 0.3f, 1f);
+        input.style.borderRightColor = new Color(0.3f, 0.3f, 0.3f, 1f);
+        input.style.borderBottomColor = new Color(0.3f, 0.3f, 0.3f, 1f);
+        input.style.borderLeftColor = new Color(0.3f, 0.3f, 0.3f, 1f);
     }
 
     private void ToggleClickSpawnMode()

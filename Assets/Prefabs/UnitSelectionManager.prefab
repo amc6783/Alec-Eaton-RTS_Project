@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6954026127012377443}
   - component: {fileID: 6954026127012377440}
+  - component: {fileID: 5758021132625722920}
   m_Layer: 0
   m_Name: UnitSelectionManager
   m_TagString: Untagged
@@ -46,3 +47,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   selectedUnits: []
   dragThreshold: 4
+  commandFormationSpacing: 0.6
+--- !u!114 &5758021132625722920
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6954026127012377441}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20d7ceaf863f1c74d9c09462f3192eb8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  unitPrefab: {fileID: 5169936410613119001, guid: 396cbd8b81d459248a9e33ba5a43b4f1, type: 3}
+  fallbackTeamVisualPalette: {fileID: 11400000, guid: 4cf90cbd38a94eeaa8df89257eab5126, type: 2}
+  spawnParent: {fileID: 0}
+  worldCamera: {fileID: 0}
+  spawnSpacing: 0.6
+  panelSettings: {fileID: 11400000, guid: 75a2b48e8fed30045bb493aaeef7feaa, type: 2}
+  toggleKey: 282
+  startVisible: 0

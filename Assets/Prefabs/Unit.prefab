@@ -17,6 +17,8 @@ GameObject:
   - component: {fileID: -362030434961826030}
   - component: {fileID: -7393232956001589260}
   - component: {fileID: 877195981571942362}
+  - component: {fileID: 8688683918926927221}
+  - component: {fileID: -1111398967696014384}
   m_Layer: 0
   m_Name: Unit
   m_TagString: Untagged
@@ -106,6 +108,8 @@ MonoBehaviour:
   _componentIndexCache: 0
   _addedNetworkObject: {fileID: 5169936410613118982}
   _networkObjectCache: {fileID: 5169936410613118982}
+  maxHealth: 100
+  defaultTeam: 0
 --- !u!58 &5169936410613119002
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -154,7 +158,7 @@ MonoBehaviour:
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
-  _initializedTimestamp: -8584250318107872268
+  _initializedTimestamp: -8584241016244715700
   _localLevelOfDetailCalculationType: 0
   _useLevelOfDetail: 0
   _useRootLevelOfDetail: 1
@@ -282,3 +286,37 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   selectedLayerName: SelectedUnits
+--- !u!114 &8688683918926927221
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5169936410613119003}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44ca0cfd45cf70b4fbd261d19f34f2a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _componentIndexCache: 255
+  _addedNetworkObject: {fileID: 5169936410613118982}
+  _networkObjectCache: {fileID: 0}
+  attackDamage: 10
+  attackRange: 1.2
+  attackCooldown: 0.75
+  chaseRepathInterval: 0.15
+--- !u!114 &-1111398967696014384
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5169936410613119003}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 25bcbc2af1f50d0459ba1bfddaf8ff89, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _componentIndexCache: 255
+  _addedNetworkObject: {fileID: 5169936410613118982}
+  _networkObjectCache: {fileID: 0}

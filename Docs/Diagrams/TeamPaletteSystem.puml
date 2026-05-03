@@ -1,0 +1,99 @@
+@startuml TeamPaletteSystem
+title Team Palette System
+
+skinparam shadowing false
+skinparam activity {
+  BackgroundColor White
+  BorderColor Black
+  FontColor Black
+}
+
+start
+
+partition "UnitSpawnDebugUI" {
+  :Read Count and Team fields;
+  :Instantiate unitPrefab at click position;
+  if (fallbackTeamVisualPalette assigned?) then (yes)
+    :Call Unit.SetTeamVisualPaletteRuntime(palette);
+  else (no)
+    :Unit keeps prefab palette or resolves one later;
+  endif
+}
+
+partition "Unit" {
+  :Awake caches child Renderers;
+  :Initialize _team SyncVar to defaultTeam;
+  :ResolveTeamVisualPaletteIfMissing();
+
+  if (teamVisualPalette already assigned?) then (yes)
+    :Use assigned palette;
+  else (no)
+    :Resources.LoadAll TeamVisualPalette assets;
+    :Use first palette found;
+  endif
+
+  :ApplyTeamVisual(current team);
+}
+
+partition "UnitSpawnDebugUI" {
+  if (FishNet server is running?) then (yes)
+    :ServerManager.Spawn(networkObject, ownerConnection);
+    :Call Unit.SetTeamServer(team field);
+  else (offline debug)
+    :Call Unit.SetTeamRuntimeLocal(team field);
+  endif
+}
+
+partition "Unit Team State" {
+  if (team changed through SyncVar?) then (server or client replication)
+    :HandleTeamChanged(previousTeam, nextTeam);
+  else (local debug assignment)
+    :Use requested local team directly;
+  endif
+
+  :ApplyTeamVisual(team);
+}
+
+partition "TeamVisualPalette" {
+  :GetColorForTeam(team);
+
+  if (explicitTeamColors has team?) then (yes)
+    :Return explicit color;
+  else (no)
+    if (fallbackCycle has entries?) then (yes)
+      :Return fallbackCycle[abs(team) % length];
+    else (no)
+      :Return fallbackColor;
+    endif
+  endif
+}
+
+partition "Unit Rendering" {
+  :SetTeamColor(color);
+  :For each cached Renderer;
+
+  if (Renderer is SpriteRenderer?) then (yes)
+    :Set SpriteRenderer.color RGB;
+    :Preserve existing alpha;
+  else (no)
+    :Skip sprite tint;
+  endif
+
+  :Get MaterialPropertyBlock;
+  :Set _TeamColor;
+  :Set _BaseColor;
+  :Set _Color;
+  :Set MaterialPropertyBlock on Renderer;
+}
+
+stop
+
+legend right
+  Main assets and scripts:
+  - Assets/Resources/TeamVisualPalette.asset
+  - Assets/Scripts/Settings/TeamVisualPalette.cs
+  - Assets/Scripts/UI/UnitSpawnDebugUI.cs
+  - Assets/Scripts/Units/Unit.cs
+endlegend
+
+@enduml
